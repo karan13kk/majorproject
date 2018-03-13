@@ -1,7 +1,6 @@
 const express    	 = require('express');
 const path 			 = require('path');
 const http 			 = require('http');
-const dev 			 = require('dotenv').config();
 
 // express route
 const app = express();
@@ -13,7 +12,7 @@ var { learning } = require('./utils/training/training.js');
 
 
 app.get('*',function(req,res){
-	allUserError();
+	learning();
 })
 
 
