@@ -30,6 +30,7 @@ var learningModule = {
 }
 
 function training(usersArray,index,length,completeCountArray,completeRatingArray,completeRatingAvgArray){
+	console.log(index + " : " +length);
 	if(index<length){
 		featureSort(usersArray,index,length,completeCountArray,completeRatingArray,completeRatingAvgArray);
 	}else{
@@ -51,12 +52,12 @@ function featureSort(usersArray,index,length,completeCountArray,completeRatingAr
 		}else{
 			var id = usersArray[index].USER_ID;
 			// console.log(id);
-			var sql = "SELECT * from users WHERE USER_ID = "+id;
+			var sql = "SELECT * from users WHERE USER_ID = "+id+" ORDER BY MOVIE_ID ASC";
 			data.query(sql,function(err,result){
 				if(err){
 					console.log(err);
 				}else{
-					for(var i = 0; i<result.length*0.7; i++){ // PICKING OUT ONLY 70% OF USER DATA
+					for(var i = 0; i<=result.length*0.7; i++){ // PICKING OUT ONLY 70% OF USER DATA
 						findFactors(result[i].FEATURE,userGenreCount,userRatingMap,result[i].RATING,userGenreMapIndex);
 					}
 					for (var i = 0; i < userGenreCount.length; i++) {
@@ -70,8 +71,8 @@ function featureSort(usersArray,index,length,completeCountArray,completeRatingAr
 					userRatingAvgMap.splice(0, 0, id);
 					completeRatingAvgArray.push(userRatingAvgMap);
 					index += 1;
-					if(completeRatingAvgArray.length>20){
-						userFeature(completeRatingAvgArray,userGenreMapIndex);
+					if(completeRatingAvgArray.length>0){
+						userFeature(completeCountArray,completeRatingArray,userGenreMapIndex);
 						completeCountArray 	= [];
 						completeRatingArray = [];
 						completeRatingAvgArray =[];
@@ -96,10 +97,9 @@ function findFactors(remainder,userGenreCount,userRatingMap,rating,userGenreMapI
 	}
 }
 
-function userFeature(completeRatingAvgArray,userGenreMapIndex){
+function userFeature(completeCountArray,completeRatingArray,userGenreMapIndex){
 	// var ratingInfo 	= completeRatingArray;
 	// var countInfo	= completeCountArray;
-	var avgRatingInfo	= completeRatingAvgArray;
 	connection.getConnection(function(err,data){
 	if(err){
 			console.log(err);
@@ -111,8 +111,17 @@ function userFeature(completeRatingAvgArray,userGenreMapIndex){
 				}
 				queryString += ","+revGenreMap[key];
 			}
-			var sql = "INSERT INTO userfeature ("+queryString+") VALUES ?";
-			data.query(sql,[avgRatingInfo],function(err,result){
+			var sql = "INSERT INTO userfeaturecount ("+queryString+") VALUES ?";
+			data.query(sql,[completeCountArray],function(err,result){
+				if(err){
+					console.log(err);
+				}else{
+					
+					console.log(result);
+				}
+			});
+			var sql = "INSERT INTO userfeaturerating ("+queryString+") VALUES ?";
+			data.query(sql,[completeRatingArray],function(err,result){
 				if(err){
 					console.log(err);
 				}else{
