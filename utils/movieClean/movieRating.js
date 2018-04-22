@@ -39,7 +39,8 @@ function movieratingdb(data1){
 	if(err){
 			console.log(err);
 		}else{
-			var sql = "INSERT INTO movierating (MOVIE_ID,RATING) VALUES ?";
+			console.log(data1.length);
+			var sql = "INSERT INTO movierating (MOVIE_ID,RATING) VALUES ?  ON DUPLICATE KEY UPDATE RATING=VALUES(RATING)";
 			data.query(sql,[data1],function(err,result){
 				if(err){
 					console.log(err);

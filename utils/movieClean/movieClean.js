@@ -1,40 +1,43 @@
 const fs 	= require('fs');
 const csv 	= require("fast-csv");
 var { connection } = require('../dbSetup/database.js');
+var { genreMap, revGenreMap } = require('../mapping.js');
 
 var readcsv = {
-	 readcsv : function(){
-		var movies 			= fs.readFileSync('../../../ml-latest-small/Data/movies.csv','utf8');
+	 readmoviecsv : function(){
+		var movies 			= fs.readFileSync('../../../ml-latest-small/MediumData/movies.dat','utf8');
 		var moviesArray 	= movies.split('\n');
 		var feature;
 		var moviesArrayList 	= [];
-		// moviesArray.splice(0, 1);
-		// moviesArray.splice(moviesArray.length-1, 1);
+		moviesArray.splice(0, 1);
+		moviesArray.splice(moviesArray.length-1, 1);
 
-		// ratingsArray.splice(0, 1);
-		// ratingsArray.splice(ratingsArray.length-1, 1);
+		moviesArray.forEach(function(movie){
+			var subMovieArray 	= movie.match(/(?:[^\::"]+|"[^"]*")+/g);
+			var movieArray = [];
+			if(subMovieArray[2]){
+				var genres 			= subMovieArray[2].split('|');
+				var feature			= 1;
+				genres.forEach(function(genre){
+					feature *= genreMap[genre.replace(/(\r\n|\n|\r)/gm,"")];
+				});
+			}
+			movieArray.push(parseInt(subMovieArray[0]));
+			movieArray.push(feature);
+			moviesArrayList.push(movieArray);
+		});
+		insertMovieData(moviesArrayList);
+	},
+	readratingcsv : function(){
+		var feature;
+		var moviesArrayList 	= [];
 
-		// moviesArray.forEach(function(movie){
-		// 	var subMovieArray 	= movie.split(',');
-		// 	var movieArray = [];
-		// 	if(subMovieArray[2]){
-		// 		var genres 			= subMovieArray[2].split('|');
-		// 		var feature			= 1;
-		// 		genres.forEach(function(genre){
-		// 			feature *= genreMap[genre.replace(/(\r\n|\n|\r)/gm,"")];
-		// 		});
-		// 	}
-		// 	movieArray.push(parseInt(subMovieArray[0]));
-		// 	movieArray.push(feature);
-		// 	moviesArrayList.push(movieArray);
-		// });
-		// insertData(moviesArrayList);
 		var dataResult = [];
 		connection.getConnection(function(err,data){
 			if(err){
 				console.log(err);
 			}else{
-				var sql = "select * from movies";
+				var sql = "select * from movierating";
 				data.query(sql,function(err,result){
 					if(err){
 						console.log(err);
@@ -47,7 +50,6 @@ var readcsv = {
 				data.release();
 			}
 		});
-		// getFeature(ratingsArrayList);
 	}
 }
 
@@ -58,28 +60,32 @@ function readFile(dataResult){
 		mappingFeature[""+val.MOVIE_ID] = val.FEATURE;
 	});
 	csv
-	 .fromPath("../../../ml-latest/ratings.csv")
+	 .fromPath("../../../ml-latest-small/MediumData/ratings.csv")
 	 .on("data", function(data){
 	     // console.log(data);
 	     if(ratingsArrayList.length>40000){
-			insertData(ratingsArrayList);
+			insertFeatureData(ratingsArrayList);
 			ratingsArrayList = [];
 		}
-	     mergeData(data,mappingFeature,ratingsArrayList)
+	     mergeData(data,mappingFeature,ratingsArrayList);
 	 })
 	 .on("end", function(){
-	 	insertData(ratingsArrayList);
+	 	insertFeatureData(ratingsArrayList);
 	    console.log("done");
 	 });
 }
 
 function mergeData(subratingArray,mappingFeature,ratingsArrayList){
 	let ratingArray 		= [];
-	ratingArray.push(parseInt(subratingArray[0]));
-	ratingArray.push(parseInt(subratingArray[1]));
-	ratingArray.push(parseFloat(subratingArray[2]));
-	ratingArray.push(parseInt(mappingFeature[""+subratingArray[1]]));
-	ratingsArrayList.push(ratingArray);
+	if(parseInt(subratingArray[0])){
+		ratingArray.push(parseInt(subratingArray[0]));
+		ratingArray.push(parseInt(subratingArray[1]));
+		ratingArray.push(parseFloat(subratingArray[2]));
+		ratingArray.push(parseInt(mappingFeature[""+subratingArray[1]]));
+		ratingsArrayList.push(ratingArray);
+	}else{
+		console.log("ERRRORORORORORORORORORRR ________________" + JSON.stringify(subratingArray))
+	}
 }
 
 //=======================//
@@ -87,26 +93,26 @@ function mergeData(subratingArray,mappingFeature,ratingsArrayList){
 //=======================//
 
 // Movie Table
-// function insertData(info){
-// 	connection.getConnection(function(err,data){
-// 		if(err){
-// 			console.log(err);
-// 		}else{
-// 			var sql = "INSERT INTO movies (MOVIE_ID,RATING,FEATURE) VALUES ?"
-// 			data.query(sql,[info],function(err,result){
-// 				if(err){
-// 					console.log(err);
-// 				}else{
-// 					console.log(result);
-// 				}
-// 			});
-// 			data.release();
-// 		}
-// 	});
-// }
+function insertMovieData(info){
+	connection.getConnection(function(err,data){
+		if(err){
+			console.log(err);
+		}else{
+			var sql = "INSERT INTO movierating (MOVIE_ID,FEATURE) VALUES ?"
+			data.query(sql,[info],function(err,result){
+				if(err){
+					console.log(err);
+				}else{
+					console.log(result);
+				}
+			});
+			data.release();
+		}
+	});
+}
 
 // User Table
-function insertData(info){
+function insertFeatureData(info){
 	connection.getConnection(function(err,data){
 		if(err){
 			console.log(err);

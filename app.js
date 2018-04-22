@@ -6,13 +6,13 @@ const http 			 = require('http');
 const app = express();
 
 var { allUserError } = require('./utils/calculation/calculation.js');
-var { readcsv } = require('./utils/movieClean/movieClean.js');
+var { readmoviecsv, readratingcsv } = require('./utils/movieClean/movieClean.js');
 var { movierating } = require('./utils/movieClean/movieRating.js');
 var { learning } = require('./utils/training/training.js');
 
 
 app.get('*',function(req,res){
-	learning();
+	allUserError();
 })
 
 
